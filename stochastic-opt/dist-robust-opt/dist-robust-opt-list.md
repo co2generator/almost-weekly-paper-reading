@@ -1,6 +1,6 @@
 # Distributionally Robust Optimization
 
-Distributionally Robust Optimization (DRO) has attracted many research interests since 2010. The paper list has been shown in the following section. 
+Distributionally Robust Optimization (DRO) has attracted many research interests since 2010. In the past decade, many outstanding scholars have emerged. Their work has greatly promoted the development of DRO. The collected paper list has been shown in the following sections. 
 
 
 
@@ -12,4 +12,4 @@ Distributionally Robust Optimization (DRO) has attracted many research interests
 
 ## Shortest Path Problem
 
-- [x] [Wang, Z., K. You, S. Song, and Y. Zhang (2020). Wasserstein distributionally robust shortest path problem. European Journal of Operational Research 284(1), 31–43.](https://www.sciencedirect.com/science/article/pii/S037722172030028X)
+- [x] [Wang, Z., K. You, S. Song, and Y. Zhang (2020). Wasserstein distributionally robust shortest path problem. *European Journal of Operational Research*, 284(1), 31–43.](https://www.sciencedirect.com/science/article/pii/S037722172030028X)
