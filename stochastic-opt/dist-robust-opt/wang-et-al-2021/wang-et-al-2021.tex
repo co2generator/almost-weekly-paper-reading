@@ -1,0 +1,344 @@
+\documentclass{article}
+\pagestyle{plain}
+\setlength\textwidth{266.0pt}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{mathrsfs}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{subfigure}
+\usepackage{caption}
+\usepackage{bm}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage[paperwidth=185mm,paperheight=260mm,text={148mm,220mm},left=21mm,top=25.5mm]{geometry}
+\usepackage[round]{natbib}
+\usepackage{booktabs}
+\usepackage{algorithm,algpseudocode,amsmath}
+\usepackage[colorlinks,linkcolor=blue,anchorcolor=blue,citecolor=blue]{hyperref}
+\usepackage{color}
+\usepackage{xcolor}
+\usepackage{tikz}  
+\usepackage{pdflscape}
+\newtheorem{thm}{Theorem}
+\newtheorem{pro}{Proposition}
+\newtheorem{lem}{Lemma}
+\newtheorem{alg}{Algorithm}
+\newtheorem{ass}{Assumption}
+\newtheorem{coro}{Corollary}
+\newtheorem{defin}{Definition}
+\newtheorem{ob}{Observation}
+\newtheorem{example}{Example}
+\newtheorem{remark}{Remark}
+%\newtheorem{proof}{Proof}
+\usetikzlibrary{arrows,shapes,chains}  
+\renewcommand{\algorithmicrequire}{\textbf{Input:}}  % Use Input in the format of Algorithm  
+\renewcommand{\algorithmicensure}{\textbf{Output:}} % Use Output in the format of Algorithm  
+\title{Reading Notes on Wasserstein Distributionally Robust Shortest Path Problem}
+\author{CO2MAKER} 
+\begin {document}
+\maketitle 
+\allowdisplaybreaks[4]
+
+\noindent \textbf{Paper Name}:  \href{https://www.sciencedirect.com/science/article/abs/pii/S037722172030028X}{Wasserstein distributionally robust shortest path problem}
+
+\
+
+\noindent \textbf{Authors}: Zhuolin Wang, Keyou You, Shiji Song, Yuli Zhang
+
+\
+
+\noindent \textbf{Key Words}: Uncertainty modelling, Distributionally robust shortest path, Wasserstein metric, METT, Mixed 0–1 convex program
+
+\
+
+\noindent \textbf{Published on:} European Journal of Operational Research
+
+\
+
+\tableofcontents
+
+\newpage
+\section{Background} 
+
+\begin{table}[htbp]
+	\caption{Mathematical Notations}
+	\centering
+	\begin{tabular}{cc}
+		\toprule
+		$\mathcal{G} = (\mathcal{V}, \mathcal{A})$ & directed and connected network \\
+		$\mathcal{V}$ & vertex set, $|\mathcal{V}| = m$ \\
+		$\mathcal{A}$ & arcs set, $|\mathcal{A}| = n$ \\
+		$\bm{\xi}$      &  the travel time over all arcs \\
+		$\bm{p}$        & binary decision variables, $\bm{p} = \left\{ p_{ij} : p_{ij} \in \left\{0, 1\right\}, (i, j) \in \mathcal{A} \right\}$ \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+\noindent The standard version of SSP is:
+\begin{align}
+	\min \quad & \sum_{(i, j) \in \mathcal{A}} \xi_{ij} p_{ij} \\
+	s.t. \quad & \left\{ 
+	\begin{aligned} \label{conservative}
+		\ & \sum_{j:(i, j) \in \mathcal{A}} p_{ij} - \sum_{j:(i, j) \in \mathcal{A}} p_{ji} = b_i, && \forall i \in \mathcal{V} \\
+		& p_{i, j} \in \left\{0, 1\right\}, && \forall i, j \in \mathcal{A}
+	\end{aligned} \right. 
+\end{align}
+where $b_o = 1, b_d = -1$ and $b_i = 0, \forall i \in \mathcal{V} \setminus \left\{o, d\right\}$. The constraint in (\ref{conservative}) ensures the flow balance for the origin-destination pair $(o, d)$. Let $\mathcal{P}$ be the set of feasible paths from the original vertex $o$ to the destination vertex $d$, i.e. 
+\begin{equation}
+	\mathcal{P} = \left\{\bm{p} \ | \ \bm{p} \ \text{satisfies} \ (\ref{conservative})\right\}
+\end{equation}
+
+In practice, the travel time $\bm{\xi}$ variability is unavoidable. Obviously, the travel time $\bm{\xi}$ has a significant impact on finding an optimal path for travelers.  To quantify the reliability of a path, some criteria have been proposed, mean-excess travel time (METT) is one of such criteria.
+
+\begin{defin}
+	The $\alpha$-reliable METT of path $\bm{p}$ is defined as:
+	\begin{equation}
+		METT_{\alpha} (\bm{p}) = \min_{t \in \mathbb{R}} \left\{t + \frac{1}{\alpha} \mathbb{E}_{F}\left\{h(\bm{p}, t, \bm{\xi})\right\} \right\}
+	\end{equation} 
+	where $h(\bm{p}, t, \bm{\xi}) = [\bm{\xi}^\top\bm{p} - t]^+$ and $[x]^+ = \max\{x, 0\}$. And the associated SSP model is given by
+	\begin{equation} \label{s-ssp}
+		\min_{\bm{p} \in \mathcal{P}} \ METT_{\alpha} (\bm{p})
+	\end{equation} 
+\end{defin}
+
+However, solving the SSP model in (\ref{s-ssp}) requires the exact distribution function $F$. 
+
+\section{Motivation}
+
+Usually, the true distribution F in (\ref{s-ssp}) is unavailable and can only be partially observed through a finite sample dataset $\{\hat{\bm{\xi}}^i\}_{i \in N}$
+where $\hat{\bm{\xi}}^i$ is an independent sample of the random vector of travel time and $[N]=\{1,...,N\}$. A natural idea is to adopt the Sample Average Approximation (SAA), $F$ is approximated by an empirical distribution $F_N$ over the sample dataset, i.e.
+\begin{equation}
+	F_N(\bm{\xi}) = \frac{1}{N} \sum_{i=1}^{N} \mathbb{I}_{\{\hat{\bm{\xi}}^i \leq \bm{\xi}\}}
+\end{equation}
+where $\mathbb{I}_A$ is the indicator of event $A$. Then the SSP model in (\ref{s-ssp}) is approximately solved by
+\begin{equation} \label{saa}
+	\min_{t \in \mathbb{R}, \bm{p} \in \mathcal{P}} \left\{t + \frac{1}{N} \sum_{i=1}^{N} h(\bm{p}, t, \hat{\bm{\xi}}^i)\right\} 
+\end{equation}
+
+The empirical distribution $F_N$ converges weakly to the true distribution $F$ as $N$ tends to infinity. That is, the SAA method is sensible only for the case where the true distribution $F$ can be well approximated by the empirical distribution. When
+\begin{itemize}
+	\item the size of the sample dataset is small
+	\item the sample $\hat{\xi}^i$ if of low quality
+	\item the distribution $F$ may not be constant and is \textit{time-varying}
+\end{itemize}
+SAA model in (\ref{saa}) may exhibit poor out-of-sample performance and is not always reliable. An alternative approach is data-driven robust optimization. The key idea is that the true distribution $F$ is expected to \textit{close} to the empirical distribution $F_N$ with a high probability.
+
+\section{Formulation}
+
+\begin{defin}
+	The Wasserstein metric $d_W:\mathcal{M}(\Xi) \times \mathcal{M}(\Xi) \rightarrow \mathbb{R}_+$ is defined as:
+	\begin{align}
+		d_W(F_1, F_2)  = \inf \Bigg\{ &	\int_{\Xi \times \Xi} d(\bm{\xi}_1, \bm{\xi}_2) K(d \bm{\xi}_1, d\bm{\xi}_2) : \\
+		& \int_{\Xi} K(\bm{\xi}_1, d\bm{\xi}_2) = F_1(\bm{\xi}_1), \int_{\Xi} K(d\bm{\xi}_1, \bm{\xi}_2) = F_2(\bm{\xi}_2)  \Bigg\}
+	\end{align}
+	where $(\Xi, d)$ is a Polish metric space, $K: \Xi \times \Xi \rightarrow \mathbb{R}_+$ is the joint distribution of $F_1 \in \mathcal{M}(\Xi)$ and $F_2 \in \mathcal{M}(\Xi)$. And $d(\bm{\xi}_1, \bm{\xi}_2) = \|\bm{\xi}_1 - \bm{\xi}_2\|_p$ where $\| \cdot \|$ represents $l_p$-norm on $\mathbb{R}^n$.
+\end{defin}
+
+Then, the Wasserstein ball $\mathcal{F}_N$ is constructed as:
+\begin{equation}
+	\mathcal{F}_N = \left\{F \in \mathcal{M}(\Xi) : d_W(F_N, F)\leq \epsilon_N \right\}
+\end{equation}
+where $\epsilon_N \geq 0$ reflects the confidence in the empirical distribution $F_N$. And the more interested objective is the worst-case METT (w-METT) over the Wasserstein ball $\mathcal{F}_N$, i.e.
+\begin{align}
+	\text{w-METT} & = \sup_{F \in \mathcal{F}_N} \text{METT}_\alpha (\bm{p}) \\
+	& = \min_{t \in \mathbb{R}} \left\{t + \frac{1}{\alpha} \sup_{F \in \mathcal{F}_N} \mathbb{E}_{F}\left\{h(\bm{p}, t, \bm{\xi})\right\}\right\}
+\end{align}
+
+Therefore, the corresponding DRSP model is:
+\begin{equation}
+	\min_{\bm{p} \in \mathcal{P}} \quad \text{w-METT}_\alpha(\bm{p})
+\end{equation}
+
+\section{Solution}
+
+In this paper, they provide two versions of model, with support set and without support set. They transform the DRSP model to a finite mixed 0-1 convex problem. The following shows a lemma which is cited from \cite{RN372}, 
+
+\begin{lem}  \label{lem}
+	For any $\bm{w} \in \mathbb{R}^n$, it holds that 
+	\begin{equation}
+		\sup_{\bm{x} \in \mathbb{R}^n} \left\{\bm{w}^\top \bm{x} - \lambda \|\bm{x}\|_p\right\} = \sup_{\bm{x} \in \mathbb{R}^n} \left\{ (\|\bm{w}\|_q - \lambda) \|\bm{x}\|_p \right\}
+	\end{equation}
+	where $\| \cdot \|_q$ is the dual of $l_p$-norm, i.e. $1/p + 1/q = 1$. 
+\end{lem}
+
+\subsection{Without Support Set}
+
+\begin{thm}
+	The w-METT over the Wasserstein ball $\mathcal{F}_N$ can be computed by a finite linear programming problem:
+	\begin{align}
+		\min_{t, \bm{s}, \lambda} \quad & t + \frac{1}{\alpha} \left\{\frac{1}{N} \sum_{i=1}^{N}s_i + \lambda \epsilon_N\right\} \\
+		s.t. \quad & \left\{
+		\begin{aligned}
+			\ & \bm{p}^\top \hat{\bm{\xi}}^i - t \leq s_i, s_i \geq 0, \forall i \in [N] \\
+			& \|\bm{p}\|_q \leq \lambda
+		\end{aligned}\right. 
+	\end{align}
+	Then, the DRSP model is equivalently reformulated as the following mixed 0-1 convex problem:
+	\begin{align}
+		\min_{\bm{p}, t, \bm{s}, \lambda} \quad & t + \frac{1}{\alpha} \left\{\frac{1}{N} \sum_{i=1}^{N} s_i + \lambda \epsilon_N\right\} \\
+		s.t. \quad & \left\{
+		\begin{aligned}
+			\ & \bm{p}^\top \hat{\bm{\xi}}^i - t \leq s_i, s_i \geq 0, \forall i \in [N] \\
+			& \|\bm{p}\|_q \leq \lambda \\
+			& \bm{p} \in \mathcal{P}
+		\end{aligned} \right. 
+	\end{align}
+\end{thm}
+
+\begin{proof}
+	w-METT is equivalent to the following problem:
+	\begin{align}
+		\max_{K(\bm{\xi}, \hat{\bm{\xi}}^i) \geq 0 } \quad & \int_{\Xi} \sum_{i=1}^{N} h(\bm{p}, t, \bm{\xi}) K(d\bm{\xi}, \hat{\bm{\xi}}^i) \label{drsp-obj}\\
+		s.t. \quad & \left\{
+		\begin{aligned}
+			\ & \int_{\Xi} K(d\bm{\xi}, \hat{\bm{\xi}}^i) = \frac{1}{N}, \forall i \in [N] \\
+			& \int_{\Xi} \sum_{i=1}^{N} d(\bm{\xi}, \hat{\bm{\xi}}^i) K(d\bm{\xi}, \hat{\bm{xi}}^i) \leq \epsilon_N
+		\end{aligned} \right. \label{drsp-cons}
+	\end{align}
+	Then the Lagrange function is:
+	\begin{align}
+		\mathcal{L} (\bm{\xi}, \lambda, \bm{s}) = & \int_{\Xi} \sum_{i=1}^{N} h(\bm{p}, t, \bm{\xi}) K(d\bm{\xi}, \hat{\bm{\xi}}^i)  - \int_{\Xi} \sum_{i=1}^{N} s_i K(d\bm{\xi}, \hat{\bm{\xi}}^i) \\
+		& - \int_{\Xi} \sum_{i=1}^{N} \lambda d(\bm{\xi}, \hat{\bm{\xi}}^i) K(d\bm{\xi}, \hat{\bm{\xi}}^i) + \frac{1}{N} \sum_{i=1}^{N} s_i + \lambda \epsilon_N
+	\end{align}
+	And then the Lagrange dual function is:
+	\begin{align}
+		g(\lambda, \bm{s})  = & \sup_{\bm{\xi} \in \Xi} \mathcal{L}(\bm{\xi}, \lambda, \bm{s}) \\
+		= & \int_{\Xi} \sum_{i=1}^{N} \Big ( h(\bm{p}, t, \bm{\xi}) - s_i - \lambda d(\bm{\xi}, \hat{\bm{\xi}}^i) \Big ) K(d\bm{\xi}, \hat{\bm{\xi}}^i) + \frac{1}{N} \sum_{i=1}^{N} s_i + \lambda \epsilon_N
+	\end{align}
+	Consequently, the dual problem is:
+	\begin{align}
+		\min_{\lambda, \bm{s}} \quad & \frac{1}{N} \sum_{i=1}^{N} s_i + \lambda \epsilon_N \\
+		s.t. \quad & \left\{
+		\begin{aligned}
+			\ & h(\bm{p}, t, \bm{\xi}) - \lambda d(\bm{\xi}, \hat{\bm{\xi}}^i) \leq s_i, \forall \bm{\xi} \in \Xi i \in [N] \\
+			& \lambda \geq 0
+		\end{aligned}\right. 
+	\end{align}
+	
+	Since $h(\bm{p}, t, \bm{\xi}) = [\bm{\xi}^\top\bm{p} - t]^+ $, then,
+	\begin{align}
+		& \sup_{\bm{\xi} \in \Xi} \left\{\bm{\xi}^\top \bm{p} - t - \lambda \|\bm{\xi} - \hat{\bm{\xi}}^i \|_p \right\} \leq s_i \label{con-1} \\
+		& \sup_{\bm{\xi} \in \Xi} \left\{-\lambda \|\bm{\xi} - \hat{\bm{\xi}}^i \|_p \right\} \leq s_i \label{con-2}
+	\end{align}
+	And because $ \lambda \geq 0, \bm{\xi} \in \Xi$, inequality (\ref{con-2}) implies $s_i \geq 0$. Denote $\Delta \bm{u}_i = \bm{\xi} - \hat{\bm{\xi}}^i$, then the left hand side in (\ref{con-1}) can be re-expressed as:
+	\begin{align}
+		& \sup_{\Delta \bm{u}_i \in \Xi} \quad \left\{(\Delta \bm{u}_i + \hat{\bm{\xi}}^i)^\top\bm{p} - t - \lambda \|\Delta \bm{u}_i \|_p\right\} \\
+		= & \sup_{\Delta \bm{u}_i \in \Xi} \quad \left\{ \bm{p}^\top\Delta \bm{u}_i - \lambda  \|\Delta \bm{u}_i \|_p   \right\} + \bm{p}^\top \hat{\bm{\xi}}^i  - t \\
+		= & \sup_{\Delta \bm{u}_i \in \Xi} \quad \left\{ (\|\bm{p} \|_q - \lambda) \|\Delta \bm{u}_i\|_p \right\} + \bm{p}^\top \hat{\bm{\xi}}^i  - t \\
+		= & \left\{
+		\begin{aligned}
+			& \bm{p}^\top \hat{\bm{\xi}}^i  - t, && \|\bm{p} \|_q - \lambda \leq 0 \\
+			& +\infty, &&  \|\bm{p} \|_q - \lambda > 0
+		\end{aligned} \right.
+	\end{align}
+	
+	Thus, problem (\ref{drsp-obj}) - (\ref{drsp-cons}) can be reformulated as:
+	\begin{align}
+		\min_{\lambda, \bm{s}} \quad & \frac{1}{N} \sum_{i=1}^{N} s_i + \lambda \epsilon_N \\
+		s.t. \quad & \left\{
+		\begin{aligned}
+			\ & \bm{p}^\top \hat{\bm{\xi}}^i  - t \leq s_i, \forall i \in {N} \\
+			& \|\bm{p} \|_q - \lambda \leq 0 \\
+			& \lambda \geq 0, s_i \geq 0, \forall i \in [N]
+		\end{aligned}\right. 
+	\end{align}
+	And the transformed DRSP model is:
+	\begin{align}
+		\min_{\lambda, \bm{s}, \bm{p}} \quad & \frac{1}{N} \sum_{i=1}^{N} s_i + \lambda \epsilon_N \\
+		s.t. \quad & \left\{
+		\begin{aligned}
+			\ & \bm{p}^\top \hat{\bm{\xi}}^i  - t \leq s_i, \forall i \in {N} \\
+			& \|\bm{p} \|_q - \lambda \leq 0 \\
+			& \lambda \geq 0, s_i \geq 0, \forall i \in [N] \\
+			& \bm{p} \in \mathcal{P}
+		\end{aligned}\right. 
+	\end{align}
+	The theorem is proved.
+\end{proof}
+
+\subsection{With Support Set}
+
+The traveling time is finite in practice, and thus its support set should not be neglected. 
+
+\begin{thm}
+	Let $\Xi = [\bm{a}, \bm{b}]$, then the w-METT over the Wasserstein ball can be computed by a finite convex problem:
+	\begin{align}
+		\min_{t, \bm{s}, \lambda, \bm{\gamma}_i, \bm{\eta}_i} \quad & t + \frac{1}{\alpha} \left\{\frac{1}{N} \sum_{i=1}^{N} s_i + \lambda \epsilon_N\right\}  \\
+		s.t. \quad & \left\{
+		\begin{aligned}
+			\ & (\bm{p} + \bm{\gamma}_i - \bm{\eta}_i)^\top \hat{\bm{\xi}}^i - \bm{\gamma}_i^\top \bm{a} + \bm{\eta}_i^\top \bm{b} - t \leq s_i, \forall i \in [N] \\
+			& \|\bm{\gamma}_i + \bm{p} - \bm{\eta}_i \|_q \leq \lambda \\
+			& \bm{\eta}_i \geq 0, \bm{\gamma}_i \geq 0, s_i \geq 0, \forall i \in [N]
+		\end{aligned} \right. 
+	\end{align}
+	Moreover, the DRSP problem is re-expressed as:
+	\begin{align}
+		\min_{\bm{p}, t, \bm{s}, \lambda, \bm{\gamma}_i, \bm{\eta}_i} \quad & t + \frac{1}{\alpha} \left\{\frac{1}{N} \sum_{i=1}^{N} s_i + \lambda \epsilon_N\right\} \\
+		s.t. \quad & \left\{
+		\begin{aligned}
+			\ & (\bm{p} + \bm{\gamma}_i - \bm{\eta}_i)^\top \hat{\bm{\xi}}^i - \bm{\gamma}_i^\top \bm{a} + \bm{\eta}_i^\top \bm{b} - t \leq s_i, \forall i \in [N] \\
+			& \|\bm{\gamma}_i + \bm{p} - \bm{\eta}_i \|_q \leq \lambda \\
+			& \bm{\eta}_i \geq 0, \bm{\gamma}_i \geq 0, s_i \geq 0, \forall i \in [N] \\
+			& \bm{p} \in \mathcal{P}
+		\end{aligned} \right.
+	\end{align}
+\end{thm}
+
+\begin{proof}
+	w-METT can be reformulated as:
+	\begin{align}
+		\min_{t, \bm{s}, \lambda \geq 0 } \quad & t + \frac{1}{\alpha} \left\{\frac{1}{N} \sum_{i=1}^{N} s_i + \lambda \epsilon_N\right\}  \\
+		s.t. \quad & h(\bm{p}, t, \bm{\xi}) - \lambda d(\bm{\xi}, \hat{\bm{\xi}}^i) \leq s_i, \forall \bm{\xi} \in \Xi, i \in [N] \label{cons}
+	\end{align}
+	Constraints (\ref{cons}) can be represented as:
+	\begin{align}
+		& \sup_{\bm{\xi} \in \Xi} \left\{\bm{\xi}^\top \bm{p} - t - \lambda \|\bm{\xi} - \hat{\bm{\xi}}^i \|_p\right\} \leq s_i \label{cons-with}\\
+		& \sup_{\bm{\xi} \in \Xi} \left\{-\lambda \|\bm{\xi} - \hat{\bm{\xi}}^i \|_p\right\} \leq s_i
+	\end{align}
+	And denote $\Delta \bm{u}_i = \bm{\xi} - \hat{\bm{\xi}}^i$,  the Lagrange function of the lhs of inequality (\ref{cons-with}):
+	\begin{align}
+		\mathcal{L}(\Delta \bm{u}_i, \bm{\gamma}_i, \bm{\eta}_i) = (\bm{p} + \bm{\gamma}_i - \bm{\eta}_i)^\top (\Delta \bm{u}_i + \hat{\bm{\xi}}^i) - \lambda \|\Delta \bm{u}_i\|_p - \bm{\gamma}_i^\top \bm{a} + \bm{\eta}^\top \bm{b} - t
+	\end{align}
+	Then, the Lagrangian dual function is:
+	\begin{align}
+		g(\bm{\gamma}_i, \bm{\eta}_i) & = \sup_{\Delta \bm{u}_i} \mathcal{L}(\Delta \bm{u}_i, \bm{\gamma}_i, \bm{\eta}_i) \\
+		& = \sup_{\Delta \bm{u}_i} \left\{(\bm{p} + \bm{\gamma}_i - \bm{\eta}_i)^\top \Delta \bm{u}_i - \lambda \|\Delta \bm{u}_i\|_p\right\}  + (\bm{p} + \bm{\gamma}_i - \bm{\eta}_i)^\top\hat{\bm{\xi}}^i - \bm{\gamma}_i\bm{a} + \bm{\eta}_i^\top \bm{b} - t \\
+		& = \sup_{\Delta \bm{u}_i} \left\{ (\|\bm{p} + \bm{\gamma}_i - \bm{\eta}_i\|_q - \lambda) \|\Delta \bm{u}_i\|_p \right\} + (\bm{p} + \bm{\gamma}_i - \bm{\eta}_i)^\top\hat{\bm{\xi}}^i - \bm{\gamma}_i\bm{a} + \bm{\eta}_i^\top \bm{b} - t \\
+		& = \left\{
+		\begin{aligned}
+			\ &  (\bm{p} + \bm{\gamma}_i - \bm{\eta}_i)^\top\hat{\bm{\xi}}^i - \bm{\gamma}_i\bm{a} + \bm{\eta}_i^\top \bm{b} - t, && \|\bm{p} + \bm{\gamma}_i - \bm{\eta}_i\|_q - \lambda \leq 0 \\
+			& + \infty, && \|\bm{p} + \bm{\gamma}_i - \bm{\eta}_i\|_q - \lambda > 0
+		\end{aligned} \right.
+	\end{align}
+	Consequently, the lhs of inequality (\ref{cons-with}) admits an equivalent problem:
+	\begin{align}
+		\min_{\bm{\gamma}_i, \bm{\eta}_i} \quad & (\bm{p} + \bm{\gamma}_i - \bm{\eta}_i)^\top\hat{\bm{\xi}}^i - \bm{\gamma}_i\bm{a} + \bm{\eta}_i^\top \bm{b} - t \\ 
+		s.t. \quad & \left\{
+		\begin{aligned}
+			\ & \|\bm{p} + \bm{\gamma}_i - \bm{\eta}_i\|_q - \lambda \leq 0 \\
+			& \bm{\gamma}_i \geq 0, \bm{\eta}_i \geq 0
+		\end{aligned} \right.
+	\end{align}
+	Substitute the above problem into constraints (\ref{cons}). And the DRSP model eventually given by:
+	\begin{align}
+		\min_{\bm{p}, t, \bm{s}, \lambda, \bm{\gamma}_i, \bm{\eta}_i} \quad &  t + \frac{1}{\alpha} \left\{\frac{1}{N} \sum_{i=1}^{N} s_i + \lambda \epsilon_N\right\} \\
+		s.t. \quad & \left\{
+		\begin{aligned}
+			\ & (\bm{p} + \bm{\gamma}_i - \bm{\eta}_i)^\top\hat{\bm{\xi}}^i - \bm{\gamma}_i\bm{a} + \bm{\eta}_i^\top \bm{b} - t \leq s_i, \forall i \in [N] \\
+			& \|\bm{p} + \bm{\gamma}_i - \bm{\eta}_i\|_q - \lambda \leq 0 \\
+			& \bm{p} \in \mathcal{P}, t \geq 0, \lambda \geq 0, s_i \geq 0, \bm{\gamma}_i \geq 0, \bm{\eta}_i \geq 0, \forall i \in [N]
+		\end{aligned} \right.
+	\end{align}
+	The theorem is proved.
+\end{proof}
+
+\section{Conclusion}
+
+In this paper, they study a distributionally robust version of classical shortest path problem (DRSP). The ambiguity set is constructed as a Wasserstein ball. And through Lagrangian duality, they transform the problem into tractable convex optimization problem.  Experiments demonstrate the advantages of the presented model in terms of the out-of-sample performance and computational complexity.
+
+\newpage
+\bibliographystyle{chicago}
+\bibliography{reference.bib}
+\end {document} 
