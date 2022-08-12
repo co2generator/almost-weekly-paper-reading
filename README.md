@@ -10,7 +10,7 @@ In this project, we intend to make a collection of optimization related classica
 
 The project is organized as following two parts, ``deterministic optimization`` and ``stochastic optimization``. In the ``determinsitic optimization``, there are 4 directions: ``branch-and-cut``, ``lagrangian relaxation``, ``branch-and-price`` and ``benders decomposition``. In the stochastic optimization, there 3 directions: ``robust optimization``, ``stochastic optimization`` and ``distributionally robust optimization``.
 
-For every collected paper, there will be a paper reading note attached, which is written in Tex. In every note, the problem setting, motivation, solution approach and so on will be reported. 
+For each direction, there will be a paper list written in Markdown. In which, the paper list and famous scholars are included. And for every collected paper, there will be a paper reading note attached, which is written in Tex. In every note, the problem setting, motivation, solution approach and so on will be reported. 
 
 
 
@@ -28,3 +28,10 @@ For every collected paper, there will be a paper reading note attached, which is
   - Distributionally Robust Optimization
 - **Resource Files**
 
+
+
+### Extras
+
+If there are some mistakes, or if you want to join us, please contact us. 
+
+Email: 429401330@qq.com
